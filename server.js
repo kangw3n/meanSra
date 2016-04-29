@@ -1,51 +1,50 @@
 var express = require('express');
-var stylus = require('stylus');
-var logger = require('morgan');
-var bodyParser = require('body-parser');
+var app = express();
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+var env = process.env.NODE_ENV || 'development';
+var config = require('./server/config/config')[env];
 var mongoose = require('mongoose');
 
-var app = express();
-var env = process.env.NODE_ENV  || 'development';
-var port = process.env.PORT || 3030;
+require('./server/config/express')(app, config); // express middleware
+require('./server/config/mongoose')(config); //database connection
 
-function compile(str, path) {
-	return stylus(str)
-		.set('filename', path)
-		.set('compress', true)
-}
+var User = mongoose.model('User');
 
-app.set('views', __dirname + '/server/views');
-app.set('view engine', 'jade');
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded());
-app.use(stylus.middleware({
-	src: __dirname + '/public',
-	compile: compile
+passport.use(new LocalStrategy(function (username, password, done) {
+	User.findOne({
+		userName: username
+	}).exec(function (err, result) {
+		console.log(result);
+		if (result) {
+			return done(null, username);
+		} else {
+			return done(null, false);
+		}
+	})
 }));
-app.use(express.static(__dirname + '/public'));
 
-if (env === 'development') {
-	mongoose.connect('mongodb://localhost/multivision');
-} else {
-	mongoose.connect('mongodb://kangw3n:1234@ds021751.mlab.com:21751/multiversion');
-}
-
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error.....'));
-db.once('open', function () {
-	console.log('connection opened...');
+passport.serializeUser(function (user, done) {
+	if (user) {
+		done(null, user);
+	}
 });
 
-
-app.get('/partials/:partialPath', function (req, res) {
-	res.render('partials/' + req.params.partialPath);
+passport.deserializeUser(function (id, done) {
+	User.findOne({
+		_id: id
+	}).exec(function (err, user) {
+		if (user) {
+			return done(null, user);
+		} else {
+			return done(null, false);
+		}
+	})
 });
 
-app.get("*", function (req, res) {
-	res.render('index');
-});
+require('./server/config/routes')(app);
 
-app.listen(port, function () {
+
+app.listen(config.port, function () {
 	console.log('Server is Running');
 });

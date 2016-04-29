@@ -3,6 +3,7 @@
   <component name="JavaScriptLibraryMappings">
     <file url="file://$PROJECT_DIR$" libraries="{scratch node_modules}" />
     <file url="file://$PROJECT_DIR$/server.js" libraries="{Node Globals}" />
+    <file url="file://$PROJECT_DIR$/server/config/config.js" libraries="{Node Globals}" />
     <file url="PROJECT" libraries="{AngularJS}" />
   </component>
 </project>
